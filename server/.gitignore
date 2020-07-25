@@ -1,0 +1,6 @@
+config_local
+config_server
+vendor/
+*.out
+*.exe
+*.bat
