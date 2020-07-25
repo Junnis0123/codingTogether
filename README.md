@@ -30,4 +30,10 @@
         1. 모각코 이름
         2. 모각코 참여인 (태그 가능)
         3. 모각코 상세 내용
-# codingTogether
+# codingTogether 개발환경
+## WEB + Android
+Vue JS + PWA
+## IOS
+Swift
+## SERVER
+Go language
