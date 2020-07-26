@@ -136,12 +136,12 @@ func (app Application) login(c echo.Context) error {
 
 		refreshToken, _ := token.SignedString([]byte("soolfam"))
 
-		response := LoginResponse{true, "김선진 칭찬해", "", accessToken, refreshToken}
+		response := LoginResponse{true, "Login Successed", "", accessToken, refreshToken}
 		json, _ := json.Marshal(response)
 		return c.JSONBlob(http.StatusOK, json)
 	} else {
 
-		response := LoginResponse{false, "엥 로그인 실패여", "Not correct ID or PW", "", ""}
+		response := LoginResponse{false, "Login Failure", "Not correct ID or PW", "", ""}
 		json, _ := json.Marshal(response)
 		return c.JSONBlob(http.StatusUnauthorized, json)
 	}
