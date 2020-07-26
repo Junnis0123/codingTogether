@@ -13,3 +13,11 @@ type Response struct {
 	Errors  string
 	Data    string
 }
+
+type LoginResponse struct {
+	Success      bool
+	Message      string
+	Errors       string
+	AccessToken  string
+	RefreshToken string
+}

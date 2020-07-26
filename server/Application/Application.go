@@ -8,7 +8,11 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"reflect"
+	"strconv"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
@@ -63,17 +67,30 @@ func test(c echo.Context) error {
 func (app Application) AddAPI() {
 
 	//추후에 Router class로 뺄 예정
-
 	auth := app.e.Group("/auth")
 	users := app.e.Group("/users")
-
 	auth.POST("/login", app.login)
 
 	auth.GET("/test", test)
+	auth.GET("/duplication/:user_id", app.checkDuplication)
 
 	users.POST("/", app.createUser)
+
+	config := middleware.JWTConfig{
+		Skipper: func(c echo.Context) bool {
+			if c.Path() == "/users" {
+				return true
+			}
+			return false
+		},
+		//ContextKey: "data",
+		SigningKey: []byte("soolfam"),
+	}
+	users.Use(middleware.JWTWithConfig(config))
+
 	users.GET("/", app.showUsersAll)
-	users.GET("/:user_id", app.showUser)
+	users.GET("/test/:user_id", app.showUser)
+	users.GET("/me", app.showMySelf)
 
 }
 
@@ -83,12 +100,10 @@ func (app Application) login(c echo.Context) error {
 	user_id := c.FormValue("user_id")
 	user_pw := c.FormValue("user_pw")
 
-	fmt.Println(user_id)
-	fmt.Println(user_pw)
-
+	var user_idx int
 	var ret int
 	var nick_name string
-	rows, err := app.db.Query("SELECT count(*), user_nickname FROM user where user_id ='" + user_id + "' and user_pw='" + user_pw + "'")
+	rows, err := app.db.Query("SELECT count(*), user_idx,user_nickname FROM user where user_id ='" + user_id + "' and user_pw='" + user_pw + "'")
 
 	if err != nil {
 		log.Fatal(err)
@@ -96,18 +111,67 @@ func (app Application) login(c echo.Context) error {
 	defer rows.Close() //반드시 닫는다 (지연하여 닫기)
 
 	rows.Next()
-	rows.Scan(&ret, &nick_name)
+	rows.Scan(&ret, &user_idx, &nick_name)
 
 	if ret == 1 {
 
-		response := Response{true, "김선진 칭찬해", "", ""}
+		//AccessToken 생성
+		token := jwt.New(jwt.SigningMethodHS256)
+		// Set claims
+		claims := token.Claims.(jwt.MapClaims)
+		claims["user_idx"] = strconv.Itoa(user_idx)
+		fmt.Println(claims["user_idx"])
+		claims["exp"] = time.Now().Add(time.Minute * 30).Unix()
+
+		accessToken, err := token.SignedString([]byte("soolfam"))
+		if err != nil {
+			return err
+		}
+
+		token = jwt.New(jwt.SigningMethodHS256)
+		claims = token.Claims.(jwt.MapClaims)
+		claims["user_idx"] = strconv.Itoa(user_idx)
+		claims["real_ip"] = c.RealIP()
+		claims["exp"] = time.Now().Add(time.Hour * 24 * 30).Unix()
+
+		refreshToken, _ := token.SignedString([]byte("soolfam"))
+
+		response := LoginResponse{true, "김선진 칭찬해", "", accessToken, refreshToken}
 		json, _ := json.Marshal(response)
 		return c.JSONBlob(http.StatusOK, json)
 	} else {
 
-		response := Response{false, "엥 로그인 실패여", "Not correct ID or PW", ""}
+		response := LoginResponse{false, "엥 로그인 실패여", "Not correct ID or PW", "", ""}
 		json, _ := json.Marshal(response)
 		return c.JSONBlob(http.StatusUnauthorized, json)
+	}
+
+}
+
+//GET
+func (app Application) checkDuplication(c echo.Context) error {
+
+	user_id, _ := url.QueryUnescape(c.Param("user_id"))
+	rows, err := app.db.Query("SELECT count(*) FROM user where user_id ='" + user_id + "'")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close() //반드시 닫는다 (지연하여 닫기)
+
+	var ret int
+	rows.Next()
+	rows.Scan(&ret)
+
+	if ret == 0 {
+		response := Response{true, "Not Duplicate ID", "", ""}
+		json, _ := json.Marshal(response)
+		return c.JSONBlob(http.StatusOK, json)
+	} else {
+
+		response := Response{false, "", "Duplicate ID", ""}
+		json, _ := json.Marshal(response)
+		return c.JSONBlob(http.StatusConflict, json)
 	}
 
 }
@@ -121,7 +185,6 @@ func (app Application) createUser(c echo.Context) error {
 
 	sqlStr := fmt.Sprintf("INSERT INTO user(user_id,user_pw,user_nickname) VALUES ('%s', '%s', '%s')", user_id, user_pw, user_nickname)
 
-	fmt.Println(sqlStr)
 	result, err := app.db.Exec(sqlStr)
 
 	if err != nil {
@@ -138,7 +201,7 @@ func (app Application) createUser(c echo.Context) error {
 
 		response := Response{false, "회원 가입 실패입니다", "Not correct ID", ""}
 		json, _ := json.Marshal(response)
-		return c.JSONBlob(http.StatusUnauthorized, json)
+		return c.JSONBlob(http.StatusInternalServerError, json)
 	}
 
 }
@@ -209,4 +272,39 @@ func (app Application) showUsersAll(c echo.Context) error {
 	json, _ := json.Marshal(response)
 
 	return c.JSONBlob(http.StatusOK, json)
+}
+
+//GET
+func (app Application) showMySelf(c echo.Context) error {
+
+	user := c.Get("user").(*jwt.Token)
+	claims := user.Claims.(jwt.MapClaims)
+	user_idx := claims["user_idx"].(string)
+
+	fmt.Println("type  = ", reflect.TypeOf(user_idx))
+	fmt.Println("user idx = ", user_idx)
+	var ret int
+	var nick_name string
+	rows, err := app.db.Query("SELECT count(*), user_nickname FROM user where user_idx ='" + user_idx + "'")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close() //반드시 닫는다 (지연하여 닫기)
+
+	rows.Next()
+	rows.Scan(&ret, &nick_name)
+
+	if ret == 1 {
+
+		response := Response{true, "", "", nick_name}
+		json, _ := json.Marshal(response)
+		return c.JSONBlob(http.StatusOK, json)
+	} else {
+
+		response := Response{false, "", "Not correct ID", ""}
+		json, _ := json.Marshal(response)
+		return c.JSONBlob(http.StatusNoContent, json)
+	}
+
 }
