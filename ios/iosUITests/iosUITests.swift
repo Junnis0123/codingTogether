@@ -2,7 +2,7 @@
 //  iosUITests.swift
 //  iosUITests
 //
-//  Created by 이수현 on 2020/07/25.
+//  Created by 이수현 on 2020/07/26.
 //  Copyright © 2020 이수현. All rights reserved.
 //
 
