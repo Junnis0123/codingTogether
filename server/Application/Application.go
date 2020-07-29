@@ -57,7 +57,7 @@ func (app Application) New(connectionInfoFileName string) {
 	//Echo API 추가
 	app.AddAPI()
 
-	app.e.Logger.Fatal(app.e.Start(":80")) // localhost:1323
+	app.e.Logger.Fatal(app.e.Start(":9530")) // localhost:1323
 
 }
 func test(c echo.Context) error {
@@ -69,6 +69,7 @@ func (app Application) AddAPI() {
 	//추후에 Router class로 뺄 예정
 	auth := app.e.Group("/auth")
 	users := app.e.Group("/users")
+	codingtogethers := app.e.Group("/codingtogethers")
 	auth.POST("/login", app.login)
 
 	auth.GET("/test", test)
@@ -87,11 +88,15 @@ func (app Application) AddAPI() {
 		SigningKey: []byte("soolfam"),
 	}
 	users.Use(middleware.JWTWithConfig(config))
+	codingtogethers.Use(middleware.JWTWithConfig(config))
 
 	users.GET("/", app.showUsersAll)
 	users.GET("/test/:user_id", app.showUser)
 	users.GET("/me", app.showMySelf)
 
+	//coding together
+	codingtogethers.GET("/", app.showCodingTogether)
+	codingtogethers.POST("/", app.createCodingTogether)
 }
 
 //POST
@@ -100,6 +105,7 @@ func (app Application) login(c echo.Context) error {
 	user_id := c.FormValue("user_id")
 	user_pw := c.FormValue("user_pw")
 
+	fmt.Println(user_id, " ", user_pw)
 	var user_idx int
 	var ret int
 	var nick_name string
@@ -305,6 +311,84 @@ func (app Application) showMySelf(c echo.Context) error {
 		response := Response{false, "", "Not correct ID", ""}
 		json, _ := json.Marshal(response)
 		return c.JSONBlob(http.StatusNoContent, json)
+	}
+
+}
+
+//GET
+func (app Application) showCodingTogether(c echo.Context) error {
+
+	var codingTogether_idx int
+	var codingTogether_name string
+	var codingTogether_img_url sql.NullString
+	var codingTogether_create_time string
+	var codingTogether_Orgnizer_name string
+	var codingTogether_member_count int
+
+	rows, err := app.db.Query("SELECT * FROM codingtogether.codingtogether_lookup_view;")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close() //반드시 닫는다 (지연하여 닫기)
+
+	var Result []interface{}
+
+	for rows.Next() {
+		err := rows.Scan(&codingTogether_idx, &codingTogether_name, &codingTogether_img_url, &codingTogether_create_time, &codingTogether_Orgnizer_name, &codingTogether_member_count)
+
+		data := make(map[string]interface{})
+
+		data["codingTogether_idx"] = codingTogether_idx
+		data["codingTogether_name"] = codingTogether_name
+		data["codingTogether_img_url"] = codingTogether_img_url
+		data["codingTogether_create_time"] = codingTogether_create_time
+		data["codingTogether_Orgnizer_name"] = codingTogether_Orgnizer_name
+		data["codingTogether_member_count"] = codingTogether_member_count
+
+		if err != nil {
+			log.Fatal(err)
+		}
+		Result = append(Result, data)
+
+	}
+
+	datas, _ := json.Marshal(Result)
+	response := Response{true, "", "", string(datas)}
+	json, _ := json.Marshal(response)
+
+	return c.JSONBlob(http.StatusOK, json)
+}
+
+//POST
+func (app Application) createCodingTogether(c echo.Context) error {
+
+	user := c.Get("user").(*jwt.Token)
+	claims := user.Claims.(jwt.MapClaims)
+
+	user_idx := claims["user_idx"].(string)
+	codingtogether_name := c.FormValue("codingtogether_name")
+	codingtogether_contents := c.FormValue("codingtogether_contents")
+
+	sqlStr := fmt.Sprintf("CALL create_codingtogether('%s','%s','%s')", user_idx, codingtogether_name, codingtogether_contents)
+
+	result, err := app.db.Exec(sqlStr)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	nRow, err := result.RowsAffected()
+
+	if nRow > 0 {
+		response := Response{true, "Create Success", "", ""}
+		json, _ := json.Marshal(response)
+		return c.JSONBlob(http.StatusOK, json)
+	} else {
+
+		response := Response{false, "Create Failure", "Create Failure", ""}
+		json, _ := json.Marshal(response)
+		return c.JSONBlob(http.StatusInternalServerError, json)
 	}
 
 }
