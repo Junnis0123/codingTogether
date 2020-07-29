@@ -97,6 +97,7 @@ func (app Application) AddAPI() {
 	//coding together
 	codingtogethers.GET("/", app.showCodingTogether)
 	codingtogethers.POST("/", app.createCodingTogether)
+	codingtogethers.GET("/me", app.showCodingTogetherMySelf)
 }
 
 //POST
@@ -390,5 +391,56 @@ func (app Application) createCodingTogether(c echo.Context) error {
 		json, _ := json.Marshal(response)
 		return c.JSONBlob(http.StatusInternalServerError, json)
 	}
+
+}
+
+//GET
+func (app Application) showCodingTogetherMySelf(c echo.Context) error {
+
+	user := c.Get("user").(*jwt.Token)
+	claims := user.Claims.(jwt.MapClaims)
+	user_idx := claims["user_idx"].(string)
+
+	var codingTogether_idx int
+	var codingTogether_name string
+	var codingTogether_img_url sql.NullString
+	var codingTogether_create_time string
+	var codingTogether_Orgnizer_name string
+	var codingTogether_member_count int
+	var codingTogether_user_idx int
+
+	rows, err := app.db.Query("SELECT * FROM codingtogether.codingtogether_lookup_view_all where user_idx = '" + user_idx + "'")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close() //반드시 닫는다 (지연하여 닫기)
+
+	var Result []interface{}
+
+	for rows.Next() {
+		err := rows.Scan(&codingTogether_idx, &codingTogether_name, &codingTogether_img_url, &codingTogether_create_time, &codingTogether_Orgnizer_name, &codingTogether_member_count,
+			&codingTogether_user_idx)
+
+		data := make(map[string]interface{})
+
+		data["codingTogether_idx"] = codingTogether_idx
+		data["codingTogether_name"] = codingTogether_name
+		data["codingTogether_img_url"] = codingTogether_img_url
+		data["codingTogether_create_time"] = codingTogether_create_time
+		data["codingTogether_Orgnizer_name"] = codingTogether_Orgnizer_name
+		data["codingTogether_member_count"] = codingTogether_member_count
+
+		if err != nil {
+			log.Fatal(err)
+		}
+		Result = append(Result, data)
+
+	}
+
+	datas, _ := json.Marshal(Result)
+	response := Response{true, "", "", string(datas)}
+	json, _ := json.Marshal(response)
+
+	return c.JSONBlob(http.StatusOK, json)
 
 }
