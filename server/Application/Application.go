@@ -1,4 +1,4 @@
-package Application
+package application
 
 import (
 	"database/sql"
@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"reflect"
 	"strconv"
 	"time"
 
@@ -17,17 +16,19 @@ import (
 	"github.com/labstack/echo/middleware"
 )
 
+//Application is main Application.
 type Application struct {
 	db *sql.DB
 	e  *echo.Echo
 }
 
-//Skeleton ode
-func (app Application) Skeletion(c echo.Context) error {
+//Skeleton code
+func (app Application) Skeleton(c echo.Context) error {
 
 	return c.String(http.StatusOK, "Hi")
 }
 
+//New is Application New Method
 func (app Application) New(connectionInfoFileName string) {
 
 	connectonInfo, _ := ioutil.ReadFile(connectionInfoFileName)
@@ -64,16 +65,19 @@ func test(c echo.Context) error {
 
 	return c.String(http.StatusOK, "유별나 김선진")
 }
+
+//AddAPI is api add method
+//to-do refactoring
 func (app Application) AddAPI() {
 
 	//추후에 Router class로 뺄 예정
 	auth := app.e.Group("/auth")
 	users := app.e.Group("/users")
-	codingtogethers := app.e.Group("/codingtogethers")
+	codingTogethers := app.e.Group("/codingTogethers")
 	auth.POST("/login", app.login)
 
 	auth.GET("/test", test)
-	auth.GET("/duplication/:user_id", app.checkDuplication)
+	auth.GET("/duplication/:userID", app.checkDuplication)
 
 	users.POST("/", app.createUser)
 
@@ -88,29 +92,29 @@ func (app Application) AddAPI() {
 		SigningKey: []byte("soolfam"),
 	}
 	users.Use(middleware.JWTWithConfig(config))
-	codingtogethers.Use(middleware.JWTWithConfig(config))
+	codingTogethers.Use(middleware.JWTWithConfig(config))
 
 	users.GET("/", app.showUsersAll)
-	users.GET("/test/:user_id", app.showUser)
+	users.GET("/test/:userID", app.showUser)
 	users.GET("/me", app.showMySelf)
 
 	//coding together
-	codingtogethers.GET("/", app.showCodingTogether)
-	codingtogethers.POST("/", app.createCodingTogether)
-	codingtogethers.GET("/me", app.showCodingTogetherMySelf)
+	codingTogethers.GET("/", app.showCodingTogether)
+	codingTogethers.POST("/", app.createCodingTogether)
+	codingTogethers.GET("/me", app.showCodingTogetherMySelf)
+	codingTogethers.GET("/:codingTogetherIdx", app.showCodingTogetherContents)
 }
 
-//POST
+//login
 func (app Application) login(c echo.Context) error {
 
-	user_id := c.FormValue("user_id")
-	user_pw := c.FormValue("user_pw")
+	userID := c.FormValue("userID")
+	userPW := c.FormValue("userPW")
 
-	fmt.Println(user_id, " ", user_pw)
-	var user_idx int
+	var userIdx int
 	var ret int
-	var nick_name string
-	rows, err := app.db.Query("SELECT count(*), user_idx,user_nickname FROM user where user_id ='" + user_id + "' and user_pw='" + user_pw + "'")
+	var nickName string
+	rows, err := app.db.Query("SELECT count(*), user_idx,user_nickname FROM user where user_id ='" + userID + "' and user_pw='" + userPW + "'")
 
 	if err != nil {
 		log.Fatal(err)
@@ -118,7 +122,7 @@ func (app Application) login(c echo.Context) error {
 	defer rows.Close() //반드시 닫는다 (지연하여 닫기)
 
 	rows.Next()
-	rows.Scan(&ret, &user_idx, &nick_name)
+	rows.Scan(&ret, &userIdx, &nickName)
 
 	if ret == 1 {
 
@@ -126,8 +130,7 @@ func (app Application) login(c echo.Context) error {
 		token := jwt.New(jwt.SigningMethodHS256)
 		// Set claims
 		claims := token.Claims.(jwt.MapClaims)
-		claims["user_idx"] = strconv.Itoa(user_idx)
-		fmt.Println(claims["user_idx"])
+		claims["userIdx"] = strconv.Itoa(userIdx)
 		claims["exp"] = time.Now().Add(time.Minute * 30).Unix()
 
 		accessToken, err := token.SignedString([]byte("soolfam"))
@@ -137,29 +140,28 @@ func (app Application) login(c echo.Context) error {
 
 		token = jwt.New(jwt.SigningMethodHS256)
 		claims = token.Claims.(jwt.MapClaims)
-		claims["user_idx"] = strconv.Itoa(user_idx)
-		claims["real_ip"] = c.RealIP()
+		claims["userIdx"] = strconv.Itoa(userIdx)
+		claims["realIP"] = c.RealIP()
 		claims["exp"] = time.Now().Add(time.Hour * 24 * 30).Unix()
 
 		refreshToken, _ := token.SignedString([]byte("soolfam"))
 
-		response := LoginResponse{true, "Login Successed", "", accessToken, refreshToken}
+		response := LoginResponse{true, "로그인 성공", "", accessToken, refreshToken}
 		json, _ := json.Marshal(response)
 		return c.JSONBlob(http.StatusOK, json)
-	} else {
 
-		response := LoginResponse{false, "Login Failure", "Not correct ID or PW", "", ""}
-		json, _ := json.Marshal(response)
-		return c.JSONBlob(http.StatusUnauthorized, json)
 	}
+	response := LoginResponse{false, "로그인 실패", "Not correct ID or PW", "", ""}
+	json, _ := json.Marshal(response)
+	return c.JSONBlob(http.StatusUnauthorized, json)
 
 }
 
 //GET
 func (app Application) checkDuplication(c echo.Context) error {
 
-	user_id, _ := url.QueryUnescape(c.Param("user_id"))
-	rows, err := app.db.Query("SELECT count(*) FROM user where user_id ='" + user_id + "'")
+	userID, _ := url.QueryUnescape(c.Param("userID"))
+	rows, err := app.db.Query("SELECT count(*) FROM user where user_id ='" + userID + "'")
 
 	if err != nil {
 		log.Fatal(err)
@@ -171,26 +173,25 @@ func (app Application) checkDuplication(c echo.Context) error {
 	rows.Scan(&ret)
 
 	if ret == 0 {
-		response := Response{true, "Not Duplicate ID", "", ""}
+		response := Response{true, "사용가능한 ID입니다.", "", ""}
 		json, _ := json.Marshal(response)
 		return c.JSONBlob(http.StatusOK, json)
-	} else {
-
-		response := Response{false, "", "Duplicate ID", ""}
-		json, _ := json.Marshal(response)
-		return c.JSONBlob(http.StatusConflict, json)
 	}
+
+	response := Response{false, "중복된 ID입니다", "Duplicate ID", ""}
+	json, _ := json.Marshal(response)
+	return c.JSONBlob(http.StatusConflict, json)
 
 }
 
 //POST
 func (app Application) createUser(c echo.Context) error {
 
-	user_id := c.FormValue("user_id")
-	user_pw := c.FormValue("user_pw")
-	user_nickname := c.FormValue("user_nickname")
+	userID := c.FormValue("userID")
+	userPW := c.FormValue("userPW")
+	userNickname := c.FormValue("userNickname")
 
-	sqlStr := fmt.Sprintf("INSERT INTO user(user_id,user_pw,user_nickname) VALUES ('%s', '%s', '%s')", user_id, user_pw, user_nickname)
+	sqlStr := fmt.Sprintf("INSERT INTO user(user_id,user_pw,user_nickname) VALUES ('%s', '%s', '%s')", userID, userPW, userNickname)
 
 	result, err := app.db.Exec(sqlStr)
 
@@ -204,23 +205,22 @@ func (app Application) createUser(c echo.Context) error {
 		response := Response{true, "회원 가입 완료", "", ""}
 		json, _ := json.Marshal(response)
 		return c.JSONBlob(http.StatusOK, json)
-	} else {
-
-		response := Response{false, "회원 가입 실패입니다", "Not correct ID", ""}
-		json, _ := json.Marshal(response)
-		return c.JSONBlob(http.StatusInternalServerError, json)
 	}
+
+	response := Response{false, "회원 가입 실패입니다", "Not correct ID", ""}
+	json, _ := json.Marshal(response)
+	return c.JSONBlob(http.StatusInternalServerError, json)
 
 }
 
 //GET
 func (app Application) showUser(c echo.Context) error {
 
-	user_id, _ := url.QueryUnescape(c.Param("user_id"))
+	userID, _ := url.QueryUnescape(c.Param("userID"))
 
 	var ret int
-	var nick_name string
-	rows, err := app.db.Query("SELECT count(*), user_nickname FROM user where user_id ='" + user_id + "'")
+	var userNickname string
+	rows, err := app.db.Query("SELECT count(*), user_nickname FROM user where user_id ='" + userID + "'")
 
 	if err != nil {
 		log.Fatal(err)
@@ -228,27 +228,26 @@ func (app Application) showUser(c echo.Context) error {
 	defer rows.Close() //반드시 닫는다 (지연하여 닫기)
 
 	rows.Next()
-	rows.Scan(&ret, &nick_name)
+	rows.Scan(&ret, &userNickname)
 
 	if ret == 1 {
 
-		response := Response{true, "", "", nick_name}
+		response := Response{true, "", "", userNickname}
 		json, _ := json.Marshal(response)
 		return c.JSONBlob(http.StatusOK, json)
-	} else {
-
-		response := Response{false, "", "Not correct ID", ""}
-		json, _ := json.Marshal(response)
-		return c.JSONBlob(http.StatusNoContent, json)
 	}
+
+	response := Response{false, "", "Not correct ID", ""}
+	json, _ := json.Marshal(response)
+	return c.JSONBlob(http.StatusNoContent, json)
 
 }
 
 //GET
 func (app Application) showUsersAll(c echo.Context) error {
 
-	var user_id string
-	var user_nickname string
+	var userID string
+	var userNickname string
 
 	rows, err := app.db.Query("SELECT user_id, user_nickname FROM user")
 
@@ -260,12 +259,13 @@ func (app Application) showUsersAll(c echo.Context) error {
 	var Result []interface{}
 
 	for rows.Next() {
-		err := rows.Scan(&user_id, &user_nickname)
+
+		err := rows.Scan(&userID, &userNickname)
 
 		data := make(map[string]interface{})
 
-		data["user_id"] = user_id
-		data["user_nickname"] = user_nickname
+		data["userID"] = userID
+		data["userNickname"] = userNickname
 
 		if err != nil {
 			log.Fatal(err)
@@ -275,7 +275,7 @@ func (app Application) showUsersAll(c echo.Context) error {
 	}
 
 	datas, _ := json.Marshal(Result)
-	response := Response{true, "", "", string(datas)}
+	response := Response{true, "전체 조회 완료", "", string(datas)}
 	json, _ := json.Marshal(response)
 
 	return c.JSONBlob(http.StatusOK, json)
@@ -286,13 +286,11 @@ func (app Application) showMySelf(c echo.Context) error {
 
 	user := c.Get("user").(*jwt.Token)
 	claims := user.Claims.(jwt.MapClaims)
-	user_idx := claims["user_idx"].(string)
+	userIdx := claims["userIdx"].(string)
 
-	fmt.Println("type  = ", reflect.TypeOf(user_idx))
-	fmt.Println("user idx = ", user_idx)
 	var ret int
-	var nick_name string
-	rows, err := app.db.Query("SELECT count(*), user_nickname FROM user where user_idx ='" + user_idx + "'")
+	var userNickname string
+	rows, err := app.db.Query("SELECT count(*), user_nickname FROM user where user_idx ='" + userIdx + "'")
 
 	if err != nil {
 		log.Fatal(err)
@@ -300,31 +298,30 @@ func (app Application) showMySelf(c echo.Context) error {
 	defer rows.Close() //반드시 닫는다 (지연하여 닫기)
 
 	rows.Next()
-	rows.Scan(&ret, &nick_name)
+	rows.Scan(&ret, &userNickname)
 
 	if ret == 1 {
 
-		response := Response{true, "", "", nick_name}
+		response := Response{true, "조회 성공", "", userNickname}
 		json, _ := json.Marshal(response)
 		return c.JSONBlob(http.StatusOK, json)
-	} else {
-
-		response := Response{false, "", "Not correct ID", ""}
-		json, _ := json.Marshal(response)
-		return c.JSONBlob(http.StatusNoContent, json)
 	}
+
+	response := Response{false, "조회 실패", "Not correct user idx", ""}
+	json, _ := json.Marshal(response)
+	return c.JSONBlob(http.StatusNoContent, json)
 
 }
 
 //GET
 func (app Application) showCodingTogether(c echo.Context) error {
 
-	var codingTogether_idx int
-	var codingTogether_name string
-	var codingTogether_img_url sql.NullString
-	var codingTogether_create_time string
-	var codingTogether_Orgnizer_name string
-	var codingTogether_member_count int
+	var codingTogetherIdx int
+	var codingTogetherName string
+	var codingTogetherImgURL string
+	var codingTogetherCreateTime string
+	var codingTogetherOrgnizerName string
+	var codingTogetherMemberCount int
 
 	rows, err := app.db.Query("SELECT * FROM codingtogether.codingtogether_lookup_view;")
 
@@ -336,16 +333,16 @@ func (app Application) showCodingTogether(c echo.Context) error {
 	var Result []interface{}
 
 	for rows.Next() {
-		err := rows.Scan(&codingTogether_idx, &codingTogether_name, &codingTogether_img_url, &codingTogether_create_time, &codingTogether_Orgnizer_name, &codingTogether_member_count)
+		err := rows.Scan(&codingTogetherIdx, &codingTogetherName, &codingTogetherImgURL, &codingTogetherCreateTime, &codingTogetherOrgnizerName, &codingTogetherMemberCount)
 
 		data := make(map[string]interface{})
 
-		data["codingTogether_idx"] = codingTogether_idx
-		data["codingTogether_name"] = codingTogether_name
-		data["codingTogether_img_url"] = codingTogether_img_url
-		data["codingTogether_create_time"] = codingTogether_create_time
-		data["codingTogether_Orgnizer_name"] = codingTogether_Orgnizer_name
-		data["codingTogether_member_count"] = codingTogether_member_count
+		data["codingTogetherIdx"] = codingTogetherIdx
+		data["codingTogetherName"] = codingTogetherName
+		data["codingTogetherImgURL"] = codingTogetherImgURL
+		data["codingTogetherCreateTime"] = codingTogetherCreateTime
+		data["codingTogetherOrgnizerName"] = codingTogetherOrgnizerName
+		data["codingTogetherMemberCount"] = codingTogetherMemberCount
 
 		if err != nil {
 			log.Fatal(err)
@@ -355,7 +352,9 @@ func (app Application) showCodingTogether(c echo.Context) error {
 	}
 
 	datas, _ := json.Marshal(Result)
-	response := Response{true, "", "", string(datas)}
+
+	response := Response{true, "조회 성공", "", string(datas)}
+
 	json, _ := json.Marshal(response)
 
 	return c.JSONBlob(http.StatusOK, json)
@@ -367,11 +366,11 @@ func (app Application) createCodingTogether(c echo.Context) error {
 	user := c.Get("user").(*jwt.Token)
 	claims := user.Claims.(jwt.MapClaims)
 
-	user_idx := claims["user_idx"].(string)
-	codingtogether_name := c.FormValue("codingtogether_name")
-	codingtogether_contents := c.FormValue("codingtogether_contents")
+	userIdx := claims["userIdx"].(string)
+	codingTogetherName := c.FormValue("codingTogetherName")
+	codingTogetherContents := c.FormValue("codingTogetherContents")
 
-	sqlStr := fmt.Sprintf("CALL create_codingtogether('%s','%s','%s')", user_idx, codingtogether_name, codingtogether_contents)
+	sqlStr := fmt.Sprintf("CALL create_codingtogether('%s','%s','%s')", userIdx, codingTogetherName, codingTogetherContents)
 
 	result, err := app.db.Exec(sqlStr)
 
@@ -382,12 +381,12 @@ func (app Application) createCodingTogether(c echo.Context) error {
 	nRow, err := result.RowsAffected()
 
 	if nRow > 0 {
-		response := Response{true, "Create Success", "", ""}
+		response := Response{true, "모각코 생성 성공", "", ""}
 		json, _ := json.Marshal(response)
 		return c.JSONBlob(http.StatusOK, json)
 	} else {
 
-		response := Response{false, "Create Failure", "Create Failure", ""}
+		response := Response{false, "모각코 생성 실패", "CodingTogether Create Failure", ""}
 		json, _ := json.Marshal(response)
 		return c.JSONBlob(http.StatusInternalServerError, json)
 	}
@@ -399,17 +398,17 @@ func (app Application) showCodingTogetherMySelf(c echo.Context) error {
 
 	user := c.Get("user").(*jwt.Token)
 	claims := user.Claims.(jwt.MapClaims)
-	user_idx := claims["user_idx"].(string)
+	userIdx := claims["userIdx"].(string)
 
-	var codingTogether_idx int
-	var codingTogether_name string
-	var codingTogether_img_url sql.NullString
-	var codingTogether_create_time string
-	var codingTogether_Orgnizer_name string
-	var codingTogether_member_count int
-	var codingTogether_user_idx int
+	var codingTogetherIdx int
+	var codingTogetherName string
+	var codingTogetherImgURL string
+	var codingTogetherCreateTime string
+	var codingTogetherOrgnizerName string
+	var codingTogetherMemberCount int
+	var codingTogetherUserIdx int
 
-	rows, err := app.db.Query("SELECT * FROM codingtogether.codingtogether_lookup_view_all where user_idx = '" + user_idx + "'")
+	rows, err := app.db.Query("SELECT * FROM codingtogether.codingtogether_lookup_view_all where user_idx = '" + userIdx + "'")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -418,17 +417,17 @@ func (app Application) showCodingTogetherMySelf(c echo.Context) error {
 	var Result []interface{}
 
 	for rows.Next() {
-		err := rows.Scan(&codingTogether_idx, &codingTogether_name, &codingTogether_img_url, &codingTogether_create_time, &codingTogether_Orgnizer_name, &codingTogether_member_count,
-			&codingTogether_user_idx)
+		err := rows.Scan(&codingTogetherIdx, &codingTogetherName, &codingTogetherImgURL, &codingTogetherCreateTime, &codingTogetherOrgnizerName, &codingTogetherMemberCount,
+			&codingTogetherUserIdx)
 
 		data := make(map[string]interface{})
 
-		data["codingTogether_idx"] = codingTogether_idx
-		data["codingTogether_name"] = codingTogether_name
-		data["codingTogether_img_url"] = codingTogether_img_url
-		data["codingTogether_create_time"] = codingTogether_create_time
-		data["codingTogether_Orgnizer_name"] = codingTogether_Orgnizer_name
-		data["codingTogether_member_count"] = codingTogether_member_count
+		data["codingTogetherIdx"] = codingTogetherIdx
+		data["codingTogetherName"] = codingTogetherName
+		data["codingTogetherImgURL"] = codingTogetherImgURL
+		data["codingTogetherCreateTime"] = codingTogetherCreateTime
+		data["codingTogetherOrgnizerName"] = codingTogetherOrgnizerName
+		data["codingTogetherMemberCount"] = codingTogetherMemberCount
 
 		if err != nil {
 			log.Fatal(err)
@@ -438,9 +437,61 @@ func (app Application) showCodingTogetherMySelf(c echo.Context) error {
 	}
 
 	datas, _ := json.Marshal(Result)
-	response := Response{true, "", "", string(datas)}
+	response := Response{true, "참가 모각코 조회 섣공", "", string(datas)}
 	json, _ := json.Marshal(response)
 
 	return c.JSONBlob(http.StatusOK, json)
 
+}
+
+func (app Application) showCodingTogetherContents(c echo.Context) error {
+
+	codingTogetherIdx, _ := url.QueryUnescape(c.Param("codingTogetherIdx"))
+	fmt.Println(codingTogetherIdx)
+	var codingTogetherContents string
+
+	rows, err := app.db.Query("SELECT codingtogether_contents FROM codingtogether where codingTogether_idx =" + codingTogetherIdx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close() //반드시 닫는다 (지연하여 닫기)
+
+	isSuccess := rows.Next()
+
+	if isSuccess {
+
+		rows.Scan(&codingTogetherContents)
+
+		data := make(map[string]interface{})
+
+		data["codingTogetherContents"] = codingTogetherContents
+
+		datas, _ := json.Marshal(data)
+		response := Response{true, "조회 성공", "", string(datas)}
+		json, _ := json.Marshal(response)
+		return c.JSONBlob(http.StatusOK, json)
+
+	}
+
+	response := Response{false, "조회 실패", "Not correct codingTogether idx", ""}
+	json, _ := json.Marshal(response)
+	return c.JSONBlob(http.StatusNoContent, json)
+	/*
+		row := app.db.QueryRow("SELECT codingtogether_contents FROM codingtogether where codingTogether_idx =" + codingTogetherIdx)
+
+		err := row.Scan(&codingTogetherContents)
+
+		fmt.Println(codingTogetherContents)
+		if err != nil {
+
+			response := Response{false, "조회 실패", "Not correct user idx", ""}
+			json, _ := json.Marshal(response)
+			return c.JSONBlob(http.StatusNoContent, json)
+
+		}
+
+		response := Response{true, "조회 성공", "", codingTogetherContents}
+		json, _ := json.Marshal(response)
+		return c.JSONBlob(http.StatusOK, json)
+	*/
 }
