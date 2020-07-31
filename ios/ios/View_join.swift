@@ -8,101 +8,144 @@
 
 import SwiftUI
 
-
-struct ServerResponse: Decodable {
-	let Success:String
-	let Message:String
-	let Error:String
-	let Data:String
-}
-
-struct View_join: View {
+struct ViewJoin: View {
 	
-	@State var textfield_ID:String = ""
-	@State var textfield_password:String = ""
-	@State var textfield_password_check:String = ""
-	@State var textfield_nickname:String = ""
-
-	@State var is_check_ID:Bool = false
+	@State var textFieldID:String = ""
+	@State var textFieldPassword:String = ""
+	@State var textFieldPasswordCheck:String = ""
+	@State var textFieldNickname:String = ""
 	
-	@State var alert_error:Int = 0
-	@State var show_alert:Bool = false
+	@State var isTapID:Bool = false
+	@State var isTapPassword:Bool = false
+	@State var isTapPasswordCheck:Bool = false
+	@State var isTapNickname:Bool = false
 	
-	@State var checked_ID = "                          "
+	@State var checkedID = ""
+	@State var isCheckID:Bool = false
+	@State var showAlertForCheckID:Bool = false
+	
+	@State var isEqualPassword:Bool = false
+	
+	@State var alertErrorCodeByJoin:Int = 0
+	@State var showAlertForJoin:Bool = false
+	
+	@Environment(\.presentationMode) var mode: Binding<PresentationMode>
 	
 	var body: some View {
 		
-		VStack(alignment: .center, spacing: 45) {
+		VStack {
 			
 			VStack() {
-				Text("회원가입").font(.system(size: 50))
-				Text("CodingTogether")
-			}
+				Text("회원가입").font(.largeTitle)
+				Text("CodingTogether").font(.subheadline)
+			}.padding(10)
+				.frame(minWidth: 0, maxWidth: .infinity, alignment:.center)
 			
-			VStack() {
-				VStack(spacing: 30) {
+			VStack(spacing: 50) {
+				
+				HStack {
+					Text("ID")
+						.font(.title)
+						.frame(width: 100, height: 30, alignment: .center)
 					
-					VStack {
-						HStack {
-							Text("ID")
-								.font(.system(size: 25))
-								.frame(width: 120, height: 30, alignment: .center)
-							TextField("Input your ID", text:$textfield_ID)
-								.font(.system(size: 25))
-							Button("중복검사") {
-								self.click_button_check_ID()
-							}
-						}
-
-						Text("결정된 ID : \(self.checked_ID)")
-							.font(.system(size: 15))
-					}
-					
-					VStack {
-						HStack {
-							Text("Password").font(.system(size: 25))
-								.frame(width: 120, height: 30, alignment: .center)
-							SecureField("Input your password", text:$textfield_password)
-								.font(.system(size: 25))
-						}
-						
-						Text("10자리 이상")
-							.font(.system(size: 20))
-							.foregroundColor(.red)
-							.hidden()
-					}
-					
-					VStack {
-						HStack {
-							Text("Check").font(.system(size: 25))
-								.frame(width: 120, height: 30, alignment: .center)
-							SecureField("Repeat your password", text:$textfield_password_check)
-								.font(.system(size: 25))
-						}
-						
-						Text("비밀번호가 일치하지 않음")
-							.font(.system(size: 20))
-							.foregroundColor(.red)
-							.hidden()
-					}
-					
-					HStack {
-						Text("Nickname").font(.system(size: 25))
-							.frame(width: 120, height: 30, alignment: .center)
-						TextField("Input your Nickname", text:$textfield_nickname)
+					if !self.isCheckID {
+						TextField("Input your ID", text:$textFieldID)
+							.font(.title)
+							.simultaneousGesture(TapGesture().onEnded { _ in
+								self.touch(on: 1)
+							})
+					} else {
+						Text(self.checkedID)
 							.font(.system(size: 25))
-						
+							.foregroundColor(.blue)
 					}
+					Spacer()
+					Button("중복검사") {
+						if self.textFieldID != "" {
+							self.clickButtonForCheckID()
+							self.showAlertForCheckID.toggle()
+						}
+					}
+					.disabled(self.isCheckID)
+					.actionSheet(isPresented: $showAlertForCheckID) {
+						
+						var actionSheet:ActionSheet
+						
+						if !self.isCheckID {
+							actionSheet = ActionSheet(title: Text("ID 중복"), message: Text("동일한 ID가 이미 존재합니다. 다른 ID로 시도해주세요."), buttons: [.default(Text("확인"))])
+						} else {
+							actionSheet = ActionSheet(title: Text("ID 사용 가능"), message: Text("사용 가능한 ID입니다. 계속 진행해주세요."), buttons: [.default(Text("확인"))])
+						}
+						
+						return actionSheet
+					}
+				}
+				.frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+				
+				HStack {
+					Text("Password").font(.headline)
+						.frame(width: 100, height: 30, alignment: .center)
+					SecureField("Input your password", text:$textFieldPassword)
+						.font(.title)
+						.simultaneousGesture(TapGesture().onEnded { _ in
+							self.touch(on:2)
+						})
+				}
+				
+				if self.isTapPassword {
+					Text("비밀번호는 10자리 이상입니다.")
+						.font(.body)
+						.foregroundColor(.red)
+				}
+				
+				
+				HStack {
+					Text("Password \nCheck").font(.headline)
+						.frame(width: 100, alignment: .center)
+						.lineLimit(nil)
+						.multilineTextAlignment(.center)
+					SecureField("Repeat your password", text:$textFieldPasswordCheck).simultaneousGesture(TapGesture().onEnded { _ in
+						
+						self.touch(on:3)
+						
+					})
+						.font(.title)
+				}
+				
+				if self.textFieldPasswordCheck != "" {
+					
+					if !self.isEqualPassword {
+						Text("비밀번호 불일치")
+							.font(.body)
+							.foregroundColor(.red)
+					} else {
+						Text("비밀번호 일치")
+							.font(.body)
+							.foregroundColor(.blue)
+					}
+				}
+				
+				HStack {
+					Text("Nickname").font(.headline)
+						.frame(width: 100, alignment: .center)
+					TextField("Input your Nickname", text:$textFieldNickname)
+						.font(.system(size: 25))
+						.simultaneousGesture(TapGesture().onEnded { _ in
+							
+							self.touch(on:3)
+							
+						})
 					
 				}
-			}
+				
+			}.padding(10)
 			
 			Spacer()
 			
 			VStack(alignment: .center, spacing: 10) {
 				Button(action: {
-					self.show_alert.toggle()
-					self.click_button_done()
+					self.showAlertForJoin.toggle()
+					self.clickButtonForJoin()
 				}, label: {
 					HStack {
 						Text("Done")
@@ -115,29 +158,32 @@ struct View_join: View {
 					.foregroundColor(.white)
 					.background(Color.green)
 					.cornerRadius(40)
-					.alert(isPresented: self.$show_alert,content: {
-						get_alert(error:self.alert_error)
-				})
+					.actionSheet(isPresented: $showAlertForJoin, content: { self.createActionSheet(by:self.alertErrorCodeByJoin)}
+				)
 			}
-		}.padding([.leading, .bottom, .trailing], 20)
-			.frame(minHeight: 0, maxHeight: .infinity)
+			
+		}
+		.frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
+		.padding(10)
+		.navigationBarTitle("", displayMode: .inline)
+		.navigationBarBackButtonHidden(true)
+		.navigationBarItems(leading: btnBack)
+		
 	}
 	
+	var btnBack : some View { Button(action: {
+        self.mode.wrappedValue.dismiss()
+        }) {
+			Text("Back")
+        }
+    }
 	
-	/*
-	
-	
-	*/
-	func click_button_check_ID() {
+	func clickButtonForCheckID() {
 		
 		//중복검사 api 호출
-		let id = self.textfield_ID
+		let id = self.textFieldID
 		
-		if id == "" {
-			return
-		}
-		
-		let url_for_request = URL(string: "http://139.150.64.36/auth/duplication/\(id)")
+		let url_for_request = URL(string: "http://139.150.64.36:9530/auth/duplication/\(id)")
 		//id가 한글이면 터짐.....????
 		
 		
@@ -153,79 +199,102 @@ struct View_join: View {
 			
 			DispatchQueue.main.async() {
 				
-				if let raw = data {
-					
-					var data_str:String = String(bytes: raw, encoding: .utf8)!
-					
-					let data = Data(data_str.utf8)
-
-					let data_json = try! JSONSerialization.jsonObject(with: data, options: []) as! [String: Any]
-
-					if data_json["Success"] as! Bool {
-						self.is_check_ID = true
-						self.checked_ID = id
-					}
-				}
+				let responseDataJson:[String: Any] = JsonTool().serverResponeseToJson(data: data)
 				
+				if responseDataJson["success"] as! Bool {
+					self.isCheckID = true
+					self.checkedID = id
+				}
 			}
 		}
 		
 		task.resume()
 	}
 	
-	func get_alert(error:Int) -> Alert {
+	func createActionSheet(by errorCode:Int) -> ActionSheet {
 		
-		switch error {
+		switch errorCode {
 		case 1: // NickName Check
-			return Alert(title: Text("입력하지 않은 칸 있음"), message: Text("모든 값을 입력해주세요"), dismissButton: .default(Text("확인")))
+			return ActionSheet(title: Text("입력하지 않은 칸 있음"), message: Text("모든 값을 입력해주세요"), buttons: [.default(Text("확인"))])
 		case 2: // ID Check
-			return Alert(title: Text("ID 중복 검사 필요"), message: Text("ID 입력칸 옆의 중복검사 버튼을 눌러주세요"), dismissButton: .default(Text("확인")))
+			return ActionSheet(title: Text("ID 중복 검사 필요"), message: Text("ID 입력칸 옆의 중복검사 버튼을 눌러주세요"), buttons: [.default(Text("확인"))])
 		case 3: // PW Check
-			return Alert(title: Text("비밀번호 일치하지 않음"), message: Text("Password와 Check에 동일하게 입력해주세요"), dismissButton: .default(Text("확인")))
+			return ActionSheet(title: Text("비밀번호 일치하지 않음"), message: Text("Password와 Check에 동일하게 입력해주세요"), buttons: [.default(Text("확인"))])
 		default: // Success
-			return Alert(title: Text("회원 가입 성공"), message: Text("Coding Together!"), dismissButton: .default(Text("확인")))
+			return ActionSheet(title: Text("회원 가입 성공"), message: Text("Coding Together!"), buttons: [.default(Text("확인"), action: {
+				self.mode.wrappedValue.dismiss()
+			})])
 		}
 	}
 	
 	
-	func click_button_done() {
+	func touch(on target:Int) {
+		self.isTapID = false
+		self.isTapPassword = false
+		self.isTapPasswordCheck = false
+		self.isTapNickname = false
+		
+		
+		if self.textFieldPassword == self.textFieldPasswordCheck && self.textFieldPasswordCheck != ""{
+			self.isEqualPassword = true
+		}
+		
+		switch target {
+		case 1:
+			self.isTapID = true
+			return
+		case 2:
+			self.isTapPassword = true
+			return
+		case 3:
+			self.isTapPasswordCheck = true
+			return
+		case 4:
+			self.isTapNickname = true
+			return
+		default: break
+		}
+	}
+	
+	
+	func clickButtonForJoin() {
 		
 		//가입 api 호출
-		let id = checked_ID
-		let pw = textfield_password
-		let pwc = textfield_password_check
-		let nickname = textfield_nickname
+		let id = checkedID
+		let password = textFieldPassword
+		let passwordCheck = textFieldPasswordCheck
+		let nickname = textFieldNickname
 		
 		//값 입력 체크
-		if id == "" || pw == "" || pwc == "" || nickname == "" {
-			self.alert_error = 1
+		if id == "" || password == "" || passwordCheck == "" || nickname == "" {
+			self.alertErrorCodeByJoin = 1
 			return
 		}
 		
 		//아이디 중복 체크
-		if !self.is_check_ID {
-			self.alert_error = 2
+		if !self.isCheckID {
+			self.alertErrorCodeByJoin = 2
 			return
 		}
-		//비밀번호 재확인 체크
-		else if self.textfield_password != self.textfield_password_check {
-			self.alert_error = 3
+			//비밀번호 재확인 체크
+		else if self.textFieldPassword != self.textFieldPasswordCheck {
+			self.alertErrorCodeByJoin = 3
 			return
 		}
 		
-		let url_for_request = URL(string: "http://139.150.64.36/users/")
-	
-		let pw_encoded = pw.data(using: .utf8)?.base64EncodedString()
+		let urlForRequest = URL(string: "http://139.150.64.36:9530/users/")
+		
+		let encodedPassword = password.data(using: .utf8)?.base64EncodedString()
 		
 		let raw: [String : Any] = [
-			"user_id": id,
-			"user_pw": pw_encoded!,
-			"user_nickname":nickname
+			"userID": id,
+			"userPW": encodedPassword!,
+			"userNickname":nickname
 		]
 		
-		let formDataString = (raw.flatMap({ (key, value) -> String in return "\(key)=\(value)" }) as Array).joined(separator: "&")
-
-		var request = URLRequest(url: url_for_request!)
+		let formDataString = (raw.compactMap({ (key, value) -> String in return "\(key)=\(value)" }) as Array).joined(separator: "&")
+		
+		var request = URLRequest(url: urlForRequest!)
 		request.httpMethod = "POST"
 		request.httpBody = formDataString.data(using: .utf8)
 		
@@ -244,19 +313,12 @@ struct View_join: View {
 		
 		task.resume()
 		
-		
-		//가입 성공 -> ㅊㅋㅊㅋ 로그인하셈 -> 로그인 페이지로 보냄
-		
-		//가입 실패 -> 이유 띄워주기 -> 화면 유지
-		
-		
-		//alert error 초기화
-		self.alert_error = 0
+		self.alertErrorCodeByJoin = 0
 	}
 }
 
-struct View_join_Previews: PreviewProvider {
+struct ViewJoin_Previews: PreviewProvider {
 	static var previews: some View {
-		View_join()
+		ViewJoin()
 	}
 }
