@@ -164,7 +164,7 @@
 > >     "success": {true}
 > >     "message": "조회 성공", or "조회 실패"
 > >     "errors": "Lookup Failure",
-> >     "data": "[{\"codingTogetherOrgnizerName\":\"기무서무지니\",\"codingTogetherCreateTime\":\"2020-07-27 17:05:50\",\"codingTogetherIdx\":1,\"codingTogetherImgURL\":{\"String\":\"\",\"Valid\":false},\"codingTogetherMemberCount\":4,\"codingTogetherName\":\"테스트1\"},{\"codingTogetherOrgnizerName\":\"덕\",\"codingTogetherCreateTime\":\"2020-07-27 17:06:55\",\"codingTogetherIdx\":2,\"codingTogetherImgURL\":{\"String\":\"\",\"Valid\":false},\"codingTogetherMemberCount\":3,\"codingTogetherName\":\"테스트2\"}]"
+> >     "data": "[{\"codingTogetherCreateTime\":\"2020-07-27 17:05:50\",\"codingTogetherIdx\":1,\"codingTogetherImgURL\":\"\",\"codingTogetherMemberCount\":4,\"codingTogetherName\":\"테스트1\",\"codingTogetherOrgnizerName\":\"기무서무지니\",\"codingTogetherUserID\":\"sool\"},{\"codingTogetherCreateTime\":\"2020-07-27 17:06:55\",\"codingTogetherIdx\":2,\"codingTogetherImgURL\":\"\",\"codingTogetherMemberCount\":3,\"codingTogetherName\":\"테스트2\",\"codingTogetherOrgnizerName\":\"덕\",\"codingTogetherUserID\":\"duck\"},{\"codingTogetherCreateTime\":\"2020-07-29 16:19:53\",\"codingTogetherIdx\":3,\"codingTogetherImgURL\":\"\",\"codingTogetherMemberCount\":1,\"codingTogetherName\":\"나는 느엉 짜응이라능\",\"codingTogetherOrgnizerName\":\"Abcd\",\"codingTogetherUserID\":\"Sool0487\"},{\"codingTogetherCreateTime\":\"2020-07-29 16:42:37\",\"codingTogetherIdx\":4,\"codingTogetherImgURL\":\"\",\"codingTogetherMemberCount\":1,\"codingTogetherName\":\"덕보짱의모임\",\"codingTogetherOrgnizerName\":\"동현\",\"codingTogetherUserID\":\"knight2995\"}]"
 > > }
 > > ```
 
@@ -208,8 +208,7 @@
 > >     "success": {true} or {false}
 > >     "message": "참가 모각코 조회 섣공", or "참가 모각코 조회 실패"
 > >     "errors": "Lookup Failure",
-> >     "data": "[{\"codingTogetherOrgnizerName\":\"기무서무지니\",\"codingTogetherCreateTime\":\"2020-07-27 17:05:50\",\"codingTogetherIdx\":1,\"codingTogetherImgURL\":{\"String\":\"\",\"Valid\":false},\"codingTogetherMemberCount\":4,\"codingTogetherName\":\"테스트1\"},{\"codingTogetherOrgnizerName\":\"덕\",\"codingTogetherCreateTime\":\"2020-07-27 17:06:55\",\"codingTogetherIdx\":2,\"codingTogetherImgURL\":{\"String\":\"\",\"Valid\":false},\"codingTogetherMemberCount\":3,\"codingTogetherName\":\"테스트2\"}]"
-> > }
+> >     "data": "[{\"codingTogetherCreateTime\":\"2020-07-27 17:05:50\",\"codingTogetherIdx\":1,\"codingTogetherImgURL\":\"\",\"codingTogetherMemberCount\":4,\"codingTogetherName\":\"테스트1\",\"codingTogetherOrgnizerName\":\"기무서무지니\",\"codingTogetherUserID\":\"sool\"},{\"codingTogetherCreateTime\":\"2020-07-27 17:06:55\",\"codingTogetherIdx\":2,\"codingTogetherImgURL\":\"\",\"codingTogetherMemberCount\":3,\"codingTogetherName\":\"테스트2\",\"codingTogetherOrgnizerName\":\"덕\",\"codingTogetherUserID\":\"duck\"}]"
 > > ```
 
 4. 모임 상세 정보 조회

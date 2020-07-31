@@ -321,6 +321,7 @@ func (app Application) showCodingTogether(c echo.Context) error {
 	var codingTogetherImgURL string
 	var codingTogetherCreateTime string
 	var codingTogetherOrgnizerName string
+	var codingTogetherUserID string
 	var codingTogetherMemberCount int
 
 	rows, err := app.db.Query("SELECT * FROM codingtogether.codingtogether_lookup_view;")
@@ -333,7 +334,7 @@ func (app Application) showCodingTogether(c echo.Context) error {
 	var Result []interface{}
 
 	for rows.Next() {
-		err := rows.Scan(&codingTogetherIdx, &codingTogetherName, &codingTogetherImgURL, &codingTogetherCreateTime, &codingTogetherOrgnizerName, &codingTogetherMemberCount)
+		err := rows.Scan(&codingTogetherIdx, &codingTogetherName, &codingTogetherImgURL, &codingTogetherCreateTime, &codingTogetherOrgnizerName, &codingTogetherUserID, &codingTogetherMemberCount)
 
 		data := make(map[string]interface{})
 
@@ -342,6 +343,7 @@ func (app Application) showCodingTogether(c echo.Context) error {
 		data["codingTogetherImgURL"] = codingTogetherImgURL
 		data["codingTogetherCreateTime"] = codingTogetherCreateTime
 		data["codingTogetherOrgnizerName"] = codingTogetherOrgnizerName
+		data["codingTogetherUserID"] = codingTogetherUserID
 		data["codingTogetherMemberCount"] = codingTogetherMemberCount
 
 		if err != nil {
@@ -405,6 +407,7 @@ func (app Application) showCodingTogetherMySelf(c echo.Context) error {
 	var codingTogetherImgURL string
 	var codingTogetherCreateTime string
 	var codingTogetherOrgnizerName string
+	var codingTogetherUserID string
 	var codingTogetherMemberCount int
 	var codingTogetherUserIdx int
 
@@ -417,7 +420,7 @@ func (app Application) showCodingTogetherMySelf(c echo.Context) error {
 	var Result []interface{}
 
 	for rows.Next() {
-		err := rows.Scan(&codingTogetherIdx, &codingTogetherName, &codingTogetherImgURL, &codingTogetherCreateTime, &codingTogetherOrgnizerName, &codingTogetherMemberCount,
+		err := rows.Scan(&codingTogetherIdx, &codingTogetherName, &codingTogetherImgURL, &codingTogetherCreateTime, &codingTogetherOrgnizerName, &codingTogetherUserID, &codingTogetherMemberCount,
 			&codingTogetherUserIdx)
 
 		data := make(map[string]interface{})
@@ -427,6 +430,7 @@ func (app Application) showCodingTogetherMySelf(c echo.Context) error {
 		data["codingTogetherImgURL"] = codingTogetherImgURL
 		data["codingTogetherCreateTime"] = codingTogetherCreateTime
 		data["codingTogetherOrgnizerName"] = codingTogetherOrgnizerName
+		data["codingTogetherUserID"] = codingTogetherUserID
 		data["codingTogetherMemberCount"] = codingTogetherMemberCount
 
 		if err != nil {
