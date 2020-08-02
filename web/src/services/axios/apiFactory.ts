@@ -1,5 +1,6 @@
 import defaultAxios from '@/services/axios/defaultAxios';
 import apiAxios from '@/services/axios/apiAxios';
+import { AxiosResponse } from 'axios';
 
 enum AxiosType {
   Default,
@@ -19,17 +20,27 @@ const createAxios = (type: AxiosType) => {
 export default function useAxios(type: AxiosType) {
   const axios = createAxios(type);
 
-  const get = async (url: string, params?: object) => {
+  const get = async<T = AxiosResponse> (url: string, params?: object) => {
     try {
-      const result = await axios.get(url, params);
-      return result;
+      const result = await axios.get<T>(url, params);
+      return result.data;
     } catch (e) {
-      alert(e.Message);
+      alert(e.message);
+      return false;
+    }
+  };
+  const post = async<T = AxiosResponse> (url: string, formData?: FormData) => {
+    try {
+      const result = await axios.post<T>(url, formData);
+      return result.data;
+    } catch (e) {
+      alert(e.message);
       return false;
     }
   };
 
   return {
     get,
+    post,
   };
 }

@@ -1,8 +1,8 @@
 import { reactive, ref } from '@vue/composition-api';
-import defaultAxios from '@/services/axios/defaultAxios';
 import useAxios from '@/services/axios/apiFactory';
+import DefaultInterface from '@/services/interface';
 
-interface JoinValue {
+interface JoinValue{
   id: string,
   idConfirm: boolean,
   password: string,
@@ -20,16 +20,16 @@ export default function joinMemberManager() {
     passwordConfirm: '',
     nickname: '',
   });
-  const formRefs = ref();
+  const formRefs = ref<any>();
 
   const joinMember = async () => {
     if (formRefs.value.validate()) {
       try {
         const formdata = new FormData();
-        formdata.append('user_id', session.id);
-        formdata.append('user_pw', btoa(session.password));
-        formdata.append('user_nickname', session.nickname);
-        const result = await defaultAxios.post('/users/', formdata);
+        formdata.append('userID', session.id);
+        formdata.append('userPW', btoa(session.password));
+        formdata.append('userNickname', session.nickname);
+        const result = await axios.post('/users/', formdata);
         console.log(result);
       } catch (e) {
         console.log(e);
@@ -37,8 +37,8 @@ export default function joinMemberManager() {
     }
   };
   const checkUserId = async () => {
-    const result = await axios.get(`/auth/duplication/${session.id}`);
-    session.idConfirm = result.success;
+    const result = await axios.get<DefaultInterface>(`/auth/duplication/${session.id}`);
+    if (result) session.idConfirm = result.success;
   };
 
   return {

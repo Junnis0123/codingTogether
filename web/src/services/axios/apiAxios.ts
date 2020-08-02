@@ -23,10 +23,9 @@ apiAxios.interceptors.request.use((config) => {
 });
 
 // 통신 후 인터셉트
-apiAxios.interceptors.response.use((response) => response.data,
+apiAxios.interceptors.response.use((response) => response,
   async (err) => {
     const error = err;
-    alert(err.response.message);
     return Promise.reject(error.response);
   });
 

@@ -1,9 +1,5 @@
 <template>
-  <div class="home-view">
-    <div class="home-view__my-info">
-      Your Nickname is {{ nick }}
-    </div>
-    <v-divider />
+  <div class="coding-together-detail">
     <v-row v-for="(list, idx) in lists"
            :key="idx">
       <v-col cols="12">
