@@ -17,7 +17,7 @@
               v-model="session.id"
               @keyup.enter="joinMember"
               :rules="[() => !!session.id || '아이디를 입력하세요!',
-              () => !!session.idConfirm || '아이디 중복체크를 진행해주세요!']"
+              () => session.idConfirm === true || '아이디 중복체크를 진행해주세요!']"
               label="아이디"
               name="id"
               prepend-inner-icon="mdi-account"

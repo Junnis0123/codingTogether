@@ -1,6 +1,7 @@
 import { reactive } from '@vue/composition-api';
 
 interface UserInfo {
+  [index: string]: string,
   accessToken: string;
   nickname: string;
 }

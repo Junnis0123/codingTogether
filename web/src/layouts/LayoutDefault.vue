@@ -4,13 +4,9 @@
       app
       color="primary"
       dark >
-      <v-toolbar-title>모각코</v-toolbar-title>
+      <v-toolbar-title>Coding Together</v-toolbar-title>
     </v-app-bar>
     <v-main>
-      <div class="d-flex align-center">
-        <router-link to="/About">about</router-link>
-        <router-link to="/">login</router-link>
-      </div>
       <router-view />
     </v-main>
   </div>
