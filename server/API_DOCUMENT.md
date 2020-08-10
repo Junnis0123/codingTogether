@@ -178,7 +178,8 @@
 > > Request Body :  
 > > ```
 > > { 'codingTogetherName' : '모각코모임테스트1' ,
-> >   'codingTogetherContents' : '테스트입니다. 확인 !!!!!'
+> >   'codingTogetherContents' : '테스트입니다. 확인 !!!!!',
+> >   'codingTogetherImgURL' : form Data File 형식
 > > }
 > > ```
 > > Response Body : 
