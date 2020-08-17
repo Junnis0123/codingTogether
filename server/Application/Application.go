@@ -1,6 +1,7 @@
 package application
 
 import (
+	"bytes"
 	"crypto/sha512"
 	"database/sql"
 	"encoding/hex"
@@ -10,10 +11,13 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/mail"
+	"net/smtp"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	customeMiddleware "codingtogether/application/middleware"
@@ -34,6 +38,12 @@ type Application struct {
 	jwtKey string
 }
 
+func encodeRFC2047(String string) string {
+	// use mail's rfc2047 to encode any string
+	addr := mail.Address{String, ""}
+	return strings.Trim(addr.String(), " <@>")
+}
+
 //Hashing
 func (app Application) sha512Str(str string) string {
 
@@ -42,6 +52,46 @@ func (app Application) sha512Str(str string) string {
 	sha.Write([]byte(app.shaKey))
 
 	return hex.EncodeToString(sha.Sum(nil))
+}
+
+//send mail
+func (app Application) sendAuthMail(id string, mailAddr string, authKey string) {
+
+	const templ = `이 메일은 가입 인증을 위한 메일로 답장을 보내지 마세요.
+	아래 링크를 클릭하시면 가입 인증이 이루어지게 됩니다.
+	https://duckbo.site:9530/auth/mail?key={{.Key}}
+	
+`
+	t := template.New("Person template")
+	t, err := t.Parse(templ)
+	if err != nil {
+		panic(err)
+	}
+
+	key := struct {
+		Key string
+	}{Key: authKey}
+
+	var tpl bytes.Buffer
+	err = t.Execute(&tpl, key)
+
+	body := tpl.String()
+	c, _ := smtp.Dial("localhost:25")
+	c.Mail("noreply@duckbo.site")
+	c.Rcpt(mailAddr)
+
+	wc, _ := c.Data()
+	defer wc.Close()
+
+	msg := "From: " + "noreply@duckbo.site" + "\n" +
+		"To: " + mailAddr + "\n" +
+		"Subject: 모각코 가입 인증 메일입니다.\n\n" +
+		body
+
+	fmt.Fprintf(wc, msg)
+
+	err = c.Quit()
+
 }
 
 //Skeleton code
@@ -111,6 +161,7 @@ func (app Application) AddAPI() {
 
 	auth.GET("/test", test)
 	auth.GET("/duplication/:userID", app.checkDuplication)
+	auth.GET("/mail", app.authMail)
 
 	users.POST("/", app.createUser)
 
@@ -150,7 +201,8 @@ func (app Application) login(c echo.Context) error {
 	var userIdx int
 	var ret int
 	var nickName string
-	rows, err := app.db.Query("SELECT count(*), user_idx,user_nickname FROM user where user_id ='" + userID + "' and user_pw='" + hashUserPW + "'")
+	var userAuth int
+	rows, err := app.db.Query("SELECT count(*), user_idx,user_nickname, user_auth FROM user where user_id ='" + userID + "' and user_pw='" + hashUserPW + "'")
 
 	if err != nil {
 		log.Fatal(err)
@@ -158,9 +210,9 @@ func (app Application) login(c echo.Context) error {
 	defer rows.Close() //반드시 닫는다 (지연하여 닫기)
 
 	rows.Next()
-	rows.Scan(&ret, &userIdx, &nickName)
+	rows.Scan(&ret, &userIdx, &nickName, &userAuth)
 
-	if ret == 1 {
+	if ret == 1 && userAuth != 0 {
 
 		//AccessToken 생성
 		token := jwt.New(jwt.SigningMethodHS256)
@@ -186,10 +238,45 @@ func (app Application) login(c echo.Context) error {
 		json, _ := json.Marshal(response)
 		return c.JSONBlob(http.StatusOK, json)
 
+	} else if userAuth == 0 {
+		response := response.LoginResponse{false, "로그인 실패", "Not Auth Email", "", ""}
+		json, _ := json.Marshal(response)
+		return c.JSONBlob(http.StatusUnauthorized, json)
+
 	}
 	response := response.LoginResponse{false, "로그인 실패", "Not correct ID or PW", "", ""}
 	json, _ := json.Marshal(response)
 	return c.JSONBlob(http.StatusUnauthorized, json)
+
+}
+
+//GET
+func (app Application) authMail(c echo.Context) error {
+
+	key, _ := url.QueryUnescape(c.QueryParam("key"))
+
+	var ret int
+	//SELECT `codingtogether`.`auth_email`('288513ff6adc6f97f6cfa56d1e2b2b646106dc06bf48930288cc2c84867d9d9d13362d1ce3e58108250d549eb544761e73314abfddc1bf6a9e329053c2b0d809')
+	rows, err := app.db.Query("SELECT auth_email('" + key + "');")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close() //반드시 닫는다 (지연하여 닫기)
+
+	rows.Next()
+	rows.Scan(&ret)
+
+	if ret == 1 {
+
+		response := response.Response{true, "가입 완료", "Auth Successed", ""}
+		json, _ := json.Marshal(response)
+		return c.JSONBlob(http.StatusOK, json)
+	}
+
+	response := response.Response{false, "가입 실패", "Auth Failed, ", ""}
+	json, _ := json.Marshal(response)
+	return c.JSONBlob(http.StatusNoContent, json)
 
 }
 
@@ -226,10 +313,11 @@ func (app Application) createUser(c echo.Context) error {
 	userID := c.FormValue("userID")
 	userPW := c.FormValue("userPW")
 	userNickname := c.FormValue("userNickname")
+	userEmail := c.FormValue("userEmail")
 
 	hashUserPW := app.sha512Str(userPW)
 
-	sqlStr := fmt.Sprintf("INSERT INTO user(user_id,user_pw,user_nickname) VALUES ('%s', '%s', '%s')", userID, hashUserPW, userNickname)
+	sqlStr := fmt.Sprintf("INSERT INTO user(user_id,user_pw,user_nickname, user_email) VALUES ('%s', '%s', '%s', '%s')", userID, hashUserPW, userNickname, userEmail)
 
 	result, err := app.db.Exec(sqlStr)
 
@@ -242,6 +330,15 @@ func (app Application) createUser(c echo.Context) error {
 	if nRow == 1 {
 		response := response.Response{true, "회원 가입 완료", "", ""}
 		json, _ := json.Marshal(response)
+
+		//여기는 이제 auth 테이블에 집어 넣기
+		authKey := app.sha512Str(userID)
+		sqlStr = fmt.Sprintf("INSERT INTO user_auth_key(user_auth_key_value, user_auth_key_user_id) VALUES ('%s', '%s')", authKey, userID)
+		app.db.Exec(sqlStr)
+
+		app.sendAuthMail(userID, userEmail, authKey)
+
+		fmt.Println("메인 전송 후")
 		return c.JSONBlob(http.StatusOK, json)
 	}
 
