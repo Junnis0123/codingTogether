@@ -35,11 +35,7 @@ struct ViewJoin: View {
 		
 		VStack {
 			
-			VStack() {
-				Text("회원가입").font(.largeTitle)
-				Text("CodingTogether").font(.subheadline)
-			}.padding(10)
-				.frame(minWidth: 0, maxWidth: .infinity, alignment:.center)
+			ViewTitle(titleText: "회원가입", subTitleText: "CodingTogether")
 			
 			VStack(spacing: 50) {
 				
@@ -167,16 +163,9 @@ struct ViewJoin: View {
 		.padding(10)
 		.navigationBarTitle("", displayMode: .inline)
 		.navigationBarBackButtonHidden(true)
-		.navigationBarItems(leading: btnBack)
+		.navigationBarItems(leading: BackButton(mode: self.mode))
 		
 	}
-	
-	var btnBack : some View { Button(action: {
-        self.mode.wrappedValue.dismiss()
-        }) {
-			Text("Back")
-        }
-    }
 	
 	func clickButtonForCheckID() {
 		
@@ -282,7 +271,7 @@ struct ViewJoin: View {
 			return
 		}
 		
-		let urlForRequest = URL(string: "http://139.150.64.36:9530/users/")
+		let urlForRequest = URL(string: "https://www.duckbo.site:9530/users/")
 		
 		let encodedPassword = password.data(using: .utf8)?.base64EncodedString()
 		

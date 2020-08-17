@@ -7,13 +7,19 @@
 //
 
 import Foundation
-import Combine
 
 class MyInfo: ObservableObject {
-	@Published var id: String = ""
-    @Published var nickname: String = ""
-    @Published var accessToken: String = ""
-    @Published var refreshToken: String = ""
+	@Published var id: String = "test_id"
+    @Published var nickname: String = "test_nickname"
+    @Published var accessToken: String = "test_accessToken"
+    @Published var refreshToken: String = "test_refreshToken"
+	
+	func resetInfo() {
+		self.id = ""
+		self.nickname = ""
+		self.accessToken = ""
+		self.refreshToken = ""
+	}
 }
 
 
@@ -32,18 +38,21 @@ class CodingTogetherList : ObservableObject {
 }
 
 struct CodingTogether : Decodable, Identifiable {
-	var id: String = ""
-	var idx: Int = 0
-	var title: String = ""
-	var orgnizerName: String = ""
-	var createTime: String = ""
-	var imageURL: String = ""
+	var id: Int = 0
+	var title: String = "Title"
+	var orgnizerID: String = "ID"
+	var orgnizerName: String = "OrgnizerName"
+	var createTime: String = "CreateTime"
+	var imageURL: String = "imageURL"
 	var memberCount: Int = 0
 	
+	var isLoadedContents: Bool = false
+	var contents: String = "아무거나 집어넣어보는 컨텐츠 내용입니다아아아아아."
+	
 	enum CodingKeys: String, CodingKey {
-		case id = "codingTogetherUserID"
-        case idx = "codingTogetherIdx"
+        case id = "codingTogetherIdx"
 		case title = "codingTogetherName"
+		case orgnizerID = "codingTogetherUserID"
 		case orgnizerName = "codingTogetherOrgnizerName"
 		case createTime = "codingTogetherCreateTime"
 		case imageURL = "codingTogetherImgURL"
