@@ -162,6 +162,7 @@ func (app Application) AddAPI() {
 	auth.GET("/test", test)
 	auth.GET("/duplication/:userID", app.checkDuplication)
 	auth.GET("/mail", app.authMail)
+	auth.POST("/mail",app.reAuthMail)
 
 	users.POST("/", app.createUser)
 
@@ -239,7 +240,7 @@ func (app Application) login(c echo.Context) error {
 		return c.JSONBlob(http.StatusOK, json)
 
 	} else if userAuth == 0 {
-		response := response.LoginResponse{false, "로그인 실패", "Not Auth Email", "", ""}
+		response := response.LoginResponse{false, "이메일 미인증", "Not Auth Email", "", ""}
 		json, _ := json.Marshal(response)
 		return c.JSONBlob(http.StatusUnauthorized, json)
 
@@ -256,7 +257,7 @@ func (app Application) authMail(c echo.Context) error {
 	key, _ := url.QueryUnescape(c.QueryParam("key"))
 
 	var ret int
-	//SELECT `codingtogether`.`auth_email`('288513ff6adc6f97f6cfa56d1e2b2b646106dc06bf48930288cc2c84867d9d9d13362d1ce3e58108250d549eb544761e73314abfddc1bf6a9e329053c2b0d809')
+	
 	rows, err := app.db.Query("SELECT auth_email('" + key + "');")
 
 	if err != nil {
@@ -269,7 +270,7 @@ func (app Application) authMail(c echo.Context) error {
 
 	if ret == 1 {
 
-		response := response.Response{true, "가입 완료", "Auth Successed", ""}
+		response := response.Response{true, "가입 완료", "", ""}
 		json, _ := json.Marshal(response)
 		return c.JSONBlob(http.StatusOK, json)
 	}
@@ -277,6 +278,31 @@ func (app Application) authMail(c echo.Context) error {
 	response := response.Response{false, "가입 실패", "Auth Failed, ", ""}
 	json, _ := json.Marshal(response)
 	return c.JSONBlob(http.StatusNoContent, json)
+
+}
+
+//POST
+func (app Application) reAuthMail(c echo.Context) error {
+
+	userID := c.FormValue("userID")
+	userEmail := c.FormValue("userEmail")
+
+
+	//재인증 시도
+
+	//메일 재전송
+	authKey := app.sha512Str(userID)
+	app.sendAuthMail(userID, userEmail, authKey)
+
+	response := response.Response{true, "이메일 재전송", "", ""}
+	json, _ := json.Marshal(response)
+
+	return c.JSONBlob(http.StatusOK, json)
+
+	//or
+
+	//새로운 키값 생성(현재는 구현 X)
+
 
 }
 
@@ -328,9 +354,7 @@ func (app Application) createUser(c echo.Context) error {
 	nRow, err := result.RowsAffected()
 
 	if nRow == 1 {
-		response := response.Response{true, "회원 가입 완료", "", ""}
-		json, _ := json.Marshal(response)
-
+		
 		//여기는 이제 auth 테이블에 집어 넣기
 		authKey := app.sha512Str(userID)
 		sqlStr = fmt.Sprintf("INSERT INTO user_auth_key(user_auth_key_value, user_auth_key_user_id) VALUES ('%s', '%s')", authKey, userID)
@@ -338,8 +362,11 @@ func (app Application) createUser(c echo.Context) error {
 
 		app.sendAuthMail(userID, userEmail, authKey)
 
-		fmt.Println("메인 전송 후")
+		response := response.Response{true, "회원 가입 완료", "", ""}
+		json, _ := json.Marshal(response)
+
 		return c.JSONBlob(http.StatusOK, json)
+
 	}
 
 	response := response.Response{false, "회원 가입 실패입니다", "Not correct ID", ""}
