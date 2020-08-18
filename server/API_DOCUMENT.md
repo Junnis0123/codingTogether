@@ -3,6 +3,8 @@
 - [Auth](#auth)
 > 1. [POST] /auth/login
 > 2. [GET] /auth/duplication/{userID}
+> 3. [GET] /auth/mail?key=?
+> 4. [POST] /auth/mail
 
 - [User control](#user)
 > 1. [POST] /users
@@ -33,8 +35,8 @@
 > > ```
 > > {
 > >     "success": {true} or {false} //로그인 여부
-> >     "message": "로그인 성공" or "로그인 실패",
-> >     "errors": "" or "Not correct ID or PW",
+> >     "message": "로그인 성공" or "로그인 실패" or "이메일 미인증"
+> >     "errors": "" or "Not correct ID or PW" or "Not Auth Email"
 > >     "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI1OThkZGI2MzIyYWMxMDExZTA3MDJjYjAiLCJ1c2VybmFtZSI6InRlc3QxIiwibmFtZSI6InRlc3QxIiwiZW1haWwiOiIiLCJpYXQiOjE1MDQ3MzI2NzcsImV4cCI6MTUwNDgxOTA3N30.4eG2zGpSeY2XezKB4Djf6usy7DdygIybR1VKUBj-ScE"
 > >     "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1OTgzNDI4NjgsInJlYWxfaXAiOiI6OjEiLCJ1c2VyX2lkeCI6IjMifQ.YQvmXfT1hLwGre-2MUaaH2XzLPJOICMxy63_grPoLGs"
 > > }
@@ -57,18 +59,59 @@
 > > }
 > > ```
 
+3. 이메일 인증
+>- method : GET
+>- endpoint : /auth/mail?key=?
+>- Description : 입력받은 key값으로 인증을 수행(실제로는 넘어온 값을 그대로 포트를 바꿔서 전달해주면 됨.)
+>- Example :
+> > URL : [POST] /auth/mail?key=asdfqwofnwoasfnoqiwnbfuashfljashflhqweoufbwqiebnfowaehfwhqefbqweifgwqepifbqwiefbqowhnfdiopashbdfoqwbhfiyqwoefhnoqwehfuo
+> > Response Body : 
+> > HTTP Response : 200(중복 없음) or 204(키 값이 없음)
+> > ```
+> > {
+> >     "success": {true} or {false}
+> >     "message": "가입 완료" or "가입 실패(다시 새로이 인증을 시도해주세요)",
+> >     "errors": "" or "Auth Failed",
+> >     "data": 
+> > }
+> > ```
+
+4. 이메일 재전송
+>- method : POST
+>- endpoint : /mail
+>- Description : ID, email로 이메일을 재전송합니다. (실제 정보는 이미 이전에 넘겨준 상태임)
+>- Example :
+> > URL : [POST] /mail
+> > Request Body :  
+> > ```
+> > { 'userID' : 'knight2995' ,
+> >   'userEmail' : 'knight2995@kakao.com'
+> > }
+> > ```
+> > Response Body :  
+> > HTTP Response : 200(성공)
+> > ```
+> > {
+> >     "success": {true}
+> >     "message": "이메일 재전송"
+> >     "errors": ""
+> >     "data": ""
+> > }
+> > ```
+
 ### User
 1. 회원가입
 >- method : POST
 >- endpoint : /users/
->- Description : ID, PW, Nickname으로 회원가입을 합니다.
+>- Description : ID, PW, Nickname으로 회원가입을 합니다. // 이후 입력한 메일로 가입인증 메일을 보냅니다.
 >- Example :
 > > URL : [POST] /users/
 > > Request Body :  
 > > ```
-> > { 'userID' : 'junnis0123' ,
+> > { 'userID' : 'knight2995' ,
 > >   'userPW' : base64('0123'),
-> >   'userNickname' : '킹선진'
+> >   'userNickname' : '덕보짱',
+> >   'userEmail' : 'knight2995@kakao.com'
 > > }
 > > ```
 > > Response Body :  
@@ -178,7 +221,8 @@
 > > Request Body :  
 > > ```
 > > { 'codingTogetherName' : '모각코모임테스트1' ,
-> >   'codingTogetherContents' : '테스트입니다. 확인 !!!!!'
+> >   'codingTogetherContents' : '테스트입니다. 확인 !!!!!',
+> >   'codingTogetherImgURL' : form Data File 형식
 > > }
 > > ```
 > > Response Body : 

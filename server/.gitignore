@@ -4,3 +4,6 @@ vendor/
 *.out
 *.exe
 *.bat
+.env.shakey
+.env.jwtkey
+static/

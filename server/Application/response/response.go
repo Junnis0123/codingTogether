@@ -1,4 +1,4 @@
-package application
+package response
 
 /*
 "success": {true} or {false} //로그인 여부
