@@ -162,7 +162,7 @@ func (app Application) AddAPI() {
 	auth.GET("/test", test)
 	auth.GET("/duplication/:userID", app.checkDuplication)
 	auth.GET("/mail", app.authMail)
-	auth.POST("/mail",app.reAuthMail)
+	auth.POST("/mail", app.reAuthMail)
 
 	users.POST("/", app.createUser)
 
@@ -257,7 +257,7 @@ func (app Application) authMail(c echo.Context) error {
 	key, _ := url.QueryUnescape(c.QueryParam("key"))
 
 	var ret int
-	
+
 	rows, err := app.db.Query("SELECT auth_email('" + key + "');")
 
 	if err != nil {
@@ -287,7 +287,6 @@ func (app Application) reAuthMail(c echo.Context) error {
 	userID := c.FormValue("userID")
 	userEmail := c.FormValue("userEmail")
 
-
 	//재인증 시도
 
 	//메일 재전송
@@ -302,7 +301,6 @@ func (app Application) reAuthMail(c echo.Context) error {
 	//or
 
 	//새로운 키값 생성(현재는 구현 X)
-
 
 }
 
@@ -354,7 +352,7 @@ func (app Application) createUser(c echo.Context) error {
 	nRow, err := result.RowsAffected()
 
 	if nRow == 1 {
-		
+
 		//여기는 이제 auth 테이블에 집어 넣기
 		authKey := app.sha512Str(userID)
 		sqlStr = fmt.Sprintf("INSERT INTO user_auth_key(user_auth_key_value, user_auth_key_user_id) VALUES ('%s', '%s')", authKey, userID)
@@ -482,11 +480,15 @@ func (app Application) showCodingTogether(c echo.Context) error {
 	var codingTogetherName string
 	var codingTogetherImgURL string
 	var codingTogetherCreateTime string
+	var codingTogetherStartTime string
+	var codingTogetherEndTime string
 	var codingTogetherOrgnizerName string
 	var codingTogetherUserID string
+	var codingTogetherPublic int
 	var codingTogetherMemberCount int
+	var codingTogetherUserIdx int
 
-	rows, err := app.db.Query("SELECT * FROM codingtogether.codingtogether_lookup_view;")
+	rows, err := app.db.Query("SELECT * FROM codingtogether.codingtogether_lookup_view_all where public = 1;")
 
 	if err != nil {
 		log.Fatal(err)
@@ -496,7 +498,8 @@ func (app Application) showCodingTogether(c echo.Context) error {
 	var Result []interface{}
 
 	for rows.Next() {
-		err := rows.Scan(&codingTogetherIdx, &codingTogetherName, &codingTogetherImgURL, &codingTogetherCreateTime, &codingTogetherOrgnizerName, &codingTogetherUserID, &codingTogetherMemberCount)
+		err := rows.Scan(&codingTogetherIdx, &codingTogetherName, &codingTogetherImgURL, &codingTogetherCreateTime, &codingTogetherStartTime, &codingTogetherEndTime, &codingTogetherOrgnizerName, &codingTogetherUserID, &codingTogetherPublic, &codingTogetherMemberCount,
+			&codingTogetherUserIdx)
 
 		data := make(map[string]interface{})
 
@@ -507,6 +510,7 @@ func (app Application) showCodingTogether(c echo.Context) error {
 		data["codingTogetherOrgnizerName"] = codingTogetherOrgnizerName
 		data["codingTogetherUserID"] = codingTogetherUserID
 		data["codingTogetherMemberCount"] = codingTogetherMemberCount
+		data["codingTogetherPublic"] = codingTogetherPublic != 0
 
 		if err != nil {
 			log.Fatal(err)
@@ -533,6 +537,14 @@ func (app Application) createCodingTogether(c echo.Context) error {
 	userIdx := claims["userIdx"].(string)
 	codingTogetherName := c.FormValue("codingTogetherName")
 	codingTogetherContents := c.FormValue("codingTogetherContents")
+	codingTogetherStartTime := c.FormValue("codingTogetherStartTime")
+	codingTogetherEndTime := c.FormValue("codingTogetherEndTime")
+	var codingTogetherPublic int
+	if c.FormValue("codingTogetherPublic") == "true" {
+		codingTogetherPublic = 1
+	} else {
+		codingTogetherPublic = 0
+	}
 
 	//file
 	file, _ := c.FormFile("codingTogetherImgURL")
@@ -559,7 +571,6 @@ func (app Application) createCodingTogether(c echo.Context) error {
 		duplicate++
 	}
 
-	fmt.Println(filePath)
 	dst, err := os.Create("static/images/" + filePath)
 	if err != nil {
 		panic(err)
@@ -571,12 +582,14 @@ func (app Application) createCodingTogether(c echo.Context) error {
 		panic(err)
 	}
 
-	sqlStr := fmt.Sprintf("CALL create_codingtogether('%s','%s','%s', '%s')", userIdx, codingTogetherName, codingTogetherContents, filePath)
+	sqlStr := fmt.Sprintf("CALL create_codingtogether('%s','%s','%s', '%s', '%s', '%s', '%d')", userIdx, codingTogetherName, codingTogetherContents, filePath,
+		codingTogetherStartTime, codingTogetherEndTime, codingTogetherPublic)
 
 	result, err := app.db.Exec(sqlStr)
 
 	if err != nil {
 		fmt.Println(err)
+
 	}
 
 	nRow, err := result.RowsAffected()
@@ -592,6 +605,8 @@ func (app Application) createCodingTogether(c echo.Context) error {
 		return c.JSONBlob(http.StatusInternalServerError, json)
 	}
 
+	return c.String(http.StatusInternalServerError, "")
+
 }
 
 //GET
@@ -605,8 +620,11 @@ func (app Application) showCodingTogetherMySelf(c echo.Context) error {
 	var codingTogetherName string
 	var codingTogetherImgURL string
 	var codingTogetherCreateTime string
+	var codingTogetherStartTime string
+	var codingTogetherEndTime string
 	var codingTogetherOrgnizerName string
 	var codingTogetherUserID string
+	var codingTogetherPublic int
 	var codingTogetherMemberCount int
 	var codingTogetherUserIdx int
 
@@ -619,7 +637,7 @@ func (app Application) showCodingTogetherMySelf(c echo.Context) error {
 	var Result []interface{}
 
 	for rows.Next() {
-		err := rows.Scan(&codingTogetherIdx, &codingTogetherName, &codingTogetherImgURL, &codingTogetherCreateTime, &codingTogetherOrgnizerName, &codingTogetherUserID, &codingTogetherMemberCount,
+		err := rows.Scan(&codingTogetherIdx, &codingTogetherName, &codingTogetherImgURL, &codingTogetherCreateTime, &codingTogetherStartTime, &codingTogetherEndTime, &codingTogetherOrgnizerName, &codingTogetherUserID, &codingTogetherPublic, &codingTogetherMemberCount,
 			&codingTogetherUserIdx)
 
 		data := make(map[string]interface{})
@@ -631,6 +649,9 @@ func (app Application) showCodingTogetherMySelf(c echo.Context) error {
 		data["codingTogetherOrgnizerName"] = codingTogetherOrgnizerName
 		data["codingTogetherUserID"] = codingTogetherUserID
 		data["codingTogetherMemberCount"] = codingTogetherMemberCount
+		data["codingTogetherStartTime"] = codingTogetherStartTime
+		data["codingTogetherEndTime"] = codingTogetherEndTime
+		data["codingTogetherPublic"] = codingTogetherPublic != 0
 
 		if err != nil {
 			log.Fatal(err)

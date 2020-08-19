@@ -13,9 +13,9 @@
 
 - [CodingTogether control](#codingTogether)
 > 1. [GET] /codingTogethers
-> 2. [POST] /codingTogether/
-> 3. [GET] /codingTogether/me
-> 4. [GET] /codingTogether/{codingTogetherIdx}  
+> 2. [POST] /codingTogethers/
+> 3. [GET] /codingTogethers/me
+> 4. [GET] /codingTogethers/{codingTogetherIdx}  
 
 ## API 스펙 상세 설명
 ### Auth
@@ -192,7 +192,7 @@
 1. 전체 모임 조회
 >- method : GET
 >- endpoint : /codingTogethers/
->- Description : 모임 전체 목록을 반환합니다.
+>- Description : 모임 전체 목록을 반환합니다. (단 공개된 모임만 반환한다.)
 >- Example :
 > > URL : [GET] /codingTogethers/
 > > Request Header : "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE0NjE5NTcxMzZ9.RB3arc4-OyzASAaUhC2W3ReWaXAt_z2Fd3BN4aWTgEY"  
@@ -207,7 +207,7 @@
 > >     "success": {true}
 > >     "message": "조회 성공", or "조회 실패"
 > >     "errors": "Lookup Failure",
-> >     "data": "[{\"codingTogetherCreateTime\":\"2020-07-27 17:05:50\",\"codingTogetherIdx\":1,\"codingTogetherImgURL\":\"\",\"codingTogetherMemberCount\":4,\"codingTogetherName\":\"테스트1\",\"codingTogetherOrgnizerName\":\"기무서무지니\",\"codingTogetherUserID\":\"sool\"},{\"codingTogetherCreateTime\":\"2020-07-27 17:06:55\",\"codingTogetherIdx\":2,\"codingTogetherImgURL\":\"\",\"codingTogetherMemberCount\":3,\"codingTogetherName\":\"테스트2\",\"codingTogetherOrgnizerName\":\"덕\",\"codingTogetherUserID\":\"duck\"},{\"codingTogetherCreateTime\":\"2020-07-29 16:19:53\",\"codingTogetherIdx\":3,\"codingTogetherImgURL\":\"\",\"codingTogetherMemberCount\":1,\"codingTogetherName\":\"나는 느엉 짜응이라능\",\"codingTogetherOrgnizerName\":\"Abcd\",\"codingTogetherUserID\":\"Sool0487\"},{\"codingTogetherCreateTime\":\"2020-07-29 16:42:37\",\"codingTogetherIdx\":4,\"codingTogetherImgURL\":\"\",\"codingTogetherMemberCount\":1,\"codingTogetherName\":\"덕보짱의모임\",\"codingTogetherOrgnizerName\":\"동현\",\"codingTogetherUserID\":\"knight2995\"}]"
+> >     "data": "[{\"codingTogetherCreateTime\":\"2020-08-19 11:43:43\",\"codingTogetherIdx\":1,\"codingTogetherImgURL\":\"dae85a17a63bee4e1ba099be65a921f49b7b91e9e9132aeec28b7cd2c8e6b563b4a15982988e8d2e5abf8a45db41ca9e6121f4dfa371d7d22b3b9d6b500a983b0.jpg\",\"codingTogetherMemberCount\":1,\"codingTogetherName\":\"test1\",\"codingTogetherOrgnizerName\":\"덕\",\"codingTogetherPublic\":true,\"codingTogetherUserID\":\"duck\"},{\"codingTogetherCreateTime\":\"2020-08-19 12:35:33\",\"codingTogetherIdx\":3,\"codingTogetherImgURL\":\"dae85a17a63bee4e1ba099be65a921f49b7b91e9e9132aeec28b7cd2c8e6b563b4a15982988e8d2e5abf8a45db41ca9e6121f4dfa371d7d22b3b9d6b500a983b2.jpg\",\"codingTogetherMemberCount\":1,\"codingTogetherName\":\"test3\",\"codingTogetherOrgnizerName\":\"김\",\"codingTogetherPublic\":true,\"codingTogetherUserID\":\"roll\"}]"
 > > }
 > > ```
 
@@ -223,6 +223,9 @@
 > > { 'codingTogetherName' : '모각코모임테스트1' ,
 > >   'codingTogetherContents' : '테스트입니다. 확인 !!!!!',
 > >   'codingTogetherImgURL' : form Data File 형식
+> >   'codingTogetherStartTime' : '2020-08-19 09:11:09'
+> >   'codingTogetherEndTime' : '2020-08-19 09:11:09'
+> >   'codingTogetherPublic' : 'true' or 'false'
 > > }
 > > ```
 > > Response Body : 
@@ -230,15 +233,15 @@
 > > ```
 > > {
 > >     "success": {true} or {false}
-> >     "message": "모각코 생성 성공", or "모각코 생성 실패"
-> >     "errors": "CodingTogether Create Failure",
+> >     "message": "모각코 생성 성공" or "모각코 생성 실패"
+> >     "errors": "" or "CodingTogether Create Failure",
 > >     "data": ""
 > > ```
 
 3. 자기 가입 모임 조회
 >- method : GET
 >- endpoint : /codingTogethers/me
->- Description : 본인이 가입한 모임을 조회한다.
+>- Description : 본인이 가입한 모임을 조회한다. (공개/비공개 여부 상관없이 조회)
 >- Example :
 > > URL : [POST] /codingTogethers/me
 > > Request Header : "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE0NjE5NTcxMzZ9.RB3arc4-OyzASAaUhC2W3ReWaXAt_z2Fd3BN4aWTgEY"  
@@ -252,7 +255,7 @@
 > >     "success": {true} or {false}
 > >     "message": "참가 모각코 조회 섣공", or "참가 모각코 조회 실패"
 > >     "errors": "Lookup Failure",
-> >     "data": "[{\"codingTogetherCreateTime\":\"2020-07-27 17:05:50\",\"codingTogetherIdx\":1,\"codingTogetherImgURL\":\"\",\"codingTogetherMemberCount\":4,\"codingTogetherName\":\"테스트1\",\"codingTogetherOrgnizerName\":\"기무서무지니\",\"codingTogetherUserID\":\"sool\"},{\"codingTogetherCreateTime\":\"2020-07-27 17:06:55\",\"codingTogetherIdx\":2,\"codingTogetherImgURL\":\"\",\"codingTogetherMemberCount\":3,\"codingTogetherName\":\"테스트2\",\"codingTogetherOrgnizerName\":\"덕\",\"codingTogetherUserID\":\"duck\"}]"
+> >     "data": "[{\"codingTogetherCreateTime\":\"2020-08-19 11:43:43\",\"codingTogetherEndTime\":\"2020-08-19 12:00:30\",\"codingTogetherIdx\":1,\"codingTogetherImgURL\":\"dae85a17a63bee4e1ba099be65a921f49b7b91e9e9132aeec28b7cd2c8e6b563b4a15982988e8d2e5abf8a45db41ca9e6121f4dfa371d7d22b3b9d6b500a983b0.jpg\",\"codingTogetherMemberCount\":1,\"codingTogetherName\":\"test1\",\"codingTogetherOrgnizerName\":\"덕\",\"codingTogetherPublic\":true,\"codingTogetherStartTime\":\"2020-08-19 12:00:00\",\"codingTogetherUserID\":\"duck\"},{\"codingTogetherCreateTime\":\"2020-08-19 11:44:16\",\"codingTogetherEndTime\":\"2020-08-19 12:00:30\",\"codingTogetherIdx\":2,\"codingTogetherImgURL\":\"dae85a17a63bee4e1ba099be65a921f49b7b91e9e9132aeec28b7cd2c8e6b563b4a15982988e8d2e5abf8a45db41ca9e6121f4dfa371d7d22b3b9d6b500a983b1.jpg\",\"codingTogetherMemberCount\":1,\"codingTogetherName\":\"test2\",\"codingTogetherOrgnizerName\":\"덕\",\"codingTogetherPublic\":false,\"codingTogetherStartTime\":\"2020-08-19 12:00:00\",\"codingTogetherUserID\":\"duck\"}]"
 > > ```
 
 4. 모임 상세 정보 조회
